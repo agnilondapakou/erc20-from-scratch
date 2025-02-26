@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 contract ERC20FromScratch {
 
+    address public owner;
     string public name;
     string public symbol;
     uint8 public decimals;
@@ -13,13 +14,21 @@ contract ERC20FromScratch {
     event Transfer(address indexed from, address indexed to, uint256 amount);
     event Approval(address indexed owner, address indexed spender, uint256 amount);
 
+    error InvalidAmount();
+    error InvalidAddress();
+    error InsufficientAmount();
+
     constructor(string memory _name, string memory _symbol, uint8 _decimals) {
         name = _name;
         symbol = _symbol;
         decimals = _decimals;
+        owner = msg.sender;
     }
 
     function _mint(address to, uint256 amount) internal {
+        if(to == address(0)) revert InvalidAddress();
+        if(amount <= 0) revert InvalidAmount();
+
         totalSupply += amount;
         balanceOf[to] += amount;
 
@@ -31,6 +40,10 @@ contract ERC20FromScratch {
     }
 
     function transfer(address to, uint256 amount) external returns (bool) {
+        if(to == address(0)) revert InvalidAddress();
+        if(amount <= 0) revert InvalidAmount();
+        if(balanceOf[msg.sender] < amount) revert InsufficientAmount();
+
         balanceOf[msg.sender] -= amount;
         balanceOf[to] += amount;
 
@@ -39,6 +52,11 @@ contract ERC20FromScratch {
     }
 
     function transferFrom(address from, address to, uint256 amount) external returns (bool) {
+        if(from == address(0)) revert InvalidAddress();
+        if(to == address(0)) revert InvalidAddress();
+        if(amount <= 0) revert InvalidAmount();
+        if(balanceOf[from] < amount) revert InsufficientAmount();
+
         allowance[from][msg.sender] -= amount;
         balanceOf[from] -= amount;
         balanceOf[to] += amount;
@@ -48,6 +66,8 @@ contract ERC20FromScratch {
     }
 
     function approve(address spender, uint256 amount) external returns (bool) {
+        if(spender == address(0)) revert InvalidAddress();
+
         allowance[msg.sender][spender] = amount;
         
         emit Approval(msg.sender, spender, amount);
@@ -55,6 +75,9 @@ contract ERC20FromScratch {
     }
 
     function _burn(address from, uint256 amount) internal {
+        if(from == address(0)) revert InvalidAddress();
+        if(balanceOf[from] < amount) revert InsufficientAmount();
+
         totalSupply -= amount;
         balanceOf[from] -= amount;
 
